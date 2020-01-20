@@ -1,0 +1,267 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Script Provisionamento"
+Metadata:
+    Generator: ""
+Description: ""
+
+Resources:
+    nifiknox:
+        Type: "AWS::EC2::Instance"
+        Properties:
+            ImageId: "ami-026c8acd92718196b"
+            KeyName: "nifi_knox_key"
+            InstanceType: "m5.xlarge"
+            Tenancy: "default"
+            Monitoring: false
+            DisableApiTermination: false
+            InstanceInitiatedShutdownBehavior: "stop"
+            EbsOptimized: true
+            Tags: 
+              - 
+                Key: "Name"
+                Value: "AWLNX_DLK"
+              - 
+                Key: "Grupo"
+                Value: "BIGDATA"
+              - 
+                Key: "Direccion"
+                Value: "BIGDATA"
+              - 
+                Key: "CTLAdmin"
+                Value: "BIGDATA"
+              - 
+                Key: "Entorno"
+                Value: "QAS"
+              - 
+                Key: "ServerRol"
+                Value: "Nifi-DLK"
+
+            BlockDeviceMappings:
+              - 
+                DeviceName: "/dev/sda1"
+                Ebs:
+                    VolumeSize: 30
+                    DeleteOnTermination: true
+                    VolumeType: "gp2"
+                              
+            NetworkInterfaces: 
+              - 
+                DeviceIndex: 0
+                Description: "Primary network interface"
+                AssociatePublicIpAddress: true
+                DeleteOnTermination: true
+                SubnetId: "subnet-22449a45"
+                Ipv6AddressCount: 0
+                GroupSet: 
+                  - "sg-026a4ad3e793d92f3"
+            UserData:
+              "Fn::Base64":
+                !Sub |
+                  #!/bin/bash
+                  # - Instalacao Update
+                  apt update -y;sleep 3
+                  # - Tools
+                  apt install -y unzip gzip bzip2 gpg vim curl wget git ssh lsof ldap-utils telnetd;sleep 3
+                  # - Aplications 
+                  apt install -y python3.6 python3-pip strace sysstat gnupg;sleep 3
+                  # - Instalacao Java8
+                  mkdir /opt/install
+                  cd /opt/install
+                  git clone https://gitlab.com/willian.alvessantos/cloudformation-belcorp.git
+                  cd cloudformation-belcorp/tools
+                  mkdir -p /opt/java
+                  tar -xzvf jdk-8u211-linux-x64.tar.gz -C /opt/java
+                  ln -s /opt/java/jdk1.8.0_211 /opt/java/jdk8
+                  echo "export JAVA_HOME=/opt/java/jdk8" >> /etc/environment;echo "export PATH=$JAVA_HOME/bin:$PATH" >> /etc/environment
+                  sleep 3
+                  source /etc/environment
+                  sleep 3
+                  java -version 2>> log_install_java.log;javac -version 2>> log_install_java.log
+                  # - Apache NiFi Downloads
+                  cd /opt/install
+                  curl https://www.apache.org/dist/nifi/KEYS -o KEYS
+                  curl https://www-eu.apache.org/dist/nifi/1.9.2/nifi-1.9.2-bin.zip -o nifi-1.9.2-bin.zip
+                  curl https://www.apache.org/dist/nifi/1.9.2/nifi-1.9.2-bin.zip.asc -o nifi-1.9.2-bin.zip.asc
+                  curl https://www.apache.org/dist/nifi/1.9.2/nifi-toolkit-1.9.2-bin.zip.asc -o nifi-toolkit-1.9.2-bin.zip.asc
+                  curl https://www-eu.apache.org/dist/nifi/1.9.2/nifi-toolkit-1.9.2-bin.zip -o nifi-toolkit-1.9.2-bin.zip
+                  sleep 3
+                  # - Verificando os arquivos
+                  cd /opt/install
+                  gpg --import KEYS
+                  gpg --verify nifi-1.9.2-bin.zip.asc nifi-1.9.2-bin.zip 2> verify-NiFi-`date +%d%m%Y-%H%M`.log
+                  gpg --verify nifi-toolkit-1.9.2-bin.zip.asc nifi-toolkit-1.9.2-bin.zip 2> verify-NiFi-tollkit-`date +%d%m%Y-%H%M`.log
+                  # - Instalacao NiFi
+                  cd /opt/install
+                  unzip nifi-1.9.2-bin.zip
+                  unzip nifi-toolkit-1.9.2-bin.zip
+                  sleep 3
+                  mv nifi-1.9.2 /opt/nifi
+                  mv nifi-toolkit-1.9.2 /opt/nifi/toolkit
+                  sleep 3
+                  # - Apache Knox Downloads
+                  cd /opt/install
+                  curl https://dist.apache.org/repos/dist/release/knox/KEYS -o KEYS1
+                  curl https://www-eu.apache.org/dist/knox/1.2.0/knox-1.2.0.zip -o knox-1.2.0.zip 
+                  curl https://www-eu.apache.org/dist/knox/1.2.0/knox-1.2.0.zip.asc -o knox-1.2.0.zip.asc
+                  sleep 3
+                  # - Verificando os arquivos
+                  cd /opt/install
+                  gpg --import KEYS1
+                  gpg --verify knox-1.2.0.zip.asc knox-1.2.0.zip 2> verify-knox-`date +%d%m%Y-%H%M`.log
+                  sleep 3
+                  # - Instalacao knox
+                  cd /opt/install
+                  unzip knox-1.2.0.zip
+                  sleep 3
+                  mv knox-1.2.0 /opt/knox
+                  sleep 3
+                  # - Iniciando Servicos
+                  #NiFi
+                  /opt/nifi/bin/nifi.sh install
+                  sleep 3
+                  systemctl daemon-reload
+                  /opt/nifi/bin/nifi.sh start
+                  sleep 3
+                  #Knox
+                  cd /opt/install
+                  /opt/knox/bin/ldap.sh start
+                  sleep 3
+                  echo "Passw0rd!#$" > secret
+                  /opt/knox/bin/knoxcli.sh create-master <secret
+                  sleep 3
+                  /opt/knox/bin/gateway.sh start
+                  sleep 3
+                  # Criando Usuário Hadoop
+                  useradd hadoop
+                  # Alterando a senha do Usuário
+                  echo "hadoop:bigdatateam" | sudo chpasswd
+                  # Adicionando o Usuário o Grupo sudo
+                  adduser hadoop sudo
+                  # Habilitando login Usuário e senha
+                  sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+                  service sshd restart
+    django:
+        Type: "AWS::EC2::Instance"
+        Properties:
+            ImageId: "ami-026c8acd92718196b"
+            KeyName: "nifi_knox_key"
+            InstanceType: "t2.medium"
+            Tenancy: "default"
+            Monitoring: false
+            DisableApiTermination: false
+            InstanceInitiatedShutdownBehavior: "stop"
+            CreditSpecification: 
+                CPUCredits: "standard"
+            EbsOptimized: false
+            Tags: 
+              - 
+                Key: "Name"
+                Value: "AWLNX_DLK"
+              - 
+                Key: "Grupo"
+                Value: "BIGDATA"
+              - 
+                Key: "Direccion"
+                Value: "BIGDATA"
+              - 
+                Key: "CTLAdmin"
+                Value: "BIGDATA"
+              - 
+                Key: "Entorno"
+                Value: "QAS"
+              - 
+                Key: "ServerRol"
+                Value: "Django-DLK"
+              
+            BlockDeviceMappings:
+              - 
+                DeviceName: "/dev/sda1"
+                Ebs:
+                    VolumeSize: 30
+                    DeleteOnTermination: true
+                    VolumeType: "gp2"
+                
+            NetworkInterfaces: 
+              - 
+                DeviceIndex: 0
+                Description: "Primary network interface"
+                AssociatePublicIpAddress: true
+                DeleteOnTermination: true
+                SubnetId: "subnet-22449a45"
+                Ipv6AddressCount: 0
+                GroupSet: 
+                  - "sg-026a4ad3e793d92f3"
+            UserData:
+              "Fn::Base64":
+                !Sub |
+                  #!/bin/bash
+                  # - Instalacao Update
+                  apt update -y;sleep 3
+                  # - Tools
+                  apt install -y unzip gzip bzip2 gpg vim curl wget git ssh lsof ldap-utils telnetd;sleep 3
+                  # - Aplications 
+                  apt install -y python3.6 python3-pip strace sysstat gnupg;sleep 3
+                  # - Instalacao Django2.2.3
+                  pip3 install Django;sleep 3
+                  # Criando Usuário Hadoop
+                  useradd hadoop
+                  # Alterando a senha do Usuário
+                  echo "hadoop:bigdatateam" | sudo chpasswd
+                  # Adicionando o Usuário o Grupo sudo
+                  adduser hadoop sudo
+                  # Habilitando login Usuário e senha
+                  sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+                  service sshd restart
+    DjangoLoadBalancer:
+        Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
+        Properties:
+            Name: "django-internal"
+            Scheme: "internal"
+            Subnets:
+              - subnet-22449a45
+            Tags: 
+              - 
+                Key: "Name"
+                Value: "AWLNX_DLK"
+              - 
+                Key: "Grupo"
+                Value: "BIGDATA"
+              - 
+                Key: "Direccion"
+                Value: "BIGDATA"
+              - 
+                Key: "CTLAdmin"
+                Value: "BIGDATA"
+              - 
+                Key: "Entorno"
+                Value: "QAS"
+              - 
+                Key: "ServerRol"
+                Value: "Django-DLK"
+            Type: "network"
+
+    LoadBalancerTargetGroup:
+        Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
+        Properties:
+            HealthCheckIntervalSeconds: 30
+            HealthCheckPath: "/"
+            HealthCheckProtocol: "HTTP"
+            HealthyThresholdCount: 3
+            Matcher: 
+                HttpCode: "200-399"
+            Name: "django-target"
+            Port: 8000
+            Protocol: "TCP"
+            TargetType: "instance"
+            UnhealthyThresholdCount: 3
+            VpcId: "vpc-cb33d6b1"
+      
+    LoadBalancerListener:
+        Type: 'AWS::ElasticLoadBalancingV2::Listener'
+        Properties:
+            DefaultActions:
+            - Type: forward
+              TargetGroupArn: !Ref 'LoadBalancerTargetGroup'
+            LoadBalancerArn: !Ref 'DjangoLoadBalancer'
+            Port: 8000
+            Protocol: "TCP"

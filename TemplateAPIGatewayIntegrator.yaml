@@ -1,0 +1,190 @@
+openapi: "3.0.1"
+info:
+  title: "Integrador"
+  version: "2019-07-29T19:56:15Z"
+servers:
+- url: "https://y1mgpgeaq5.execute-api.us-east-2.amazonaws.com/{basePath}"
+  variables:
+    basePath:
+      default: "/integrator"
+paths:
+  /load-redshift:
+    post:
+      responses:
+        200:
+          description: "200 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Empty"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        uri: "http://django-internal-801e0ca2f694d1c3.elb.us-east-2.amazonaws.com:8000/load-redshift"
+        #URL do Load Balancer na POC
+        # "django-internal-9be78297b30d8cb2.elb.us-east-1.amazonaws.com"
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        connectionType: "VPC_LINK"
+        connectionId: "62binq"
+        httpMethod: "POST"
+        type: "http_proxy"
+  /landing:
+    post:
+      responses:
+        200:
+          description: "200 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Empty"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        uri: "http://django-internal-801e0ca2f694d1c3.elb.us-east-2.amazonaws.com:8000/landing"
+        #URL do Load Balancer na POC
+        # "django-internal-9be78297b30d8cb2.elb.us-east-1.amazonaws.com"
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        connectionType: "VPC_LINK"
+        connectionId: "62binq"
+        httpMethod: "POST"
+        type: "http_proxy"
+  /integrador/update-request:
+    put:
+      responses:
+        200:
+          description: "200 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Empty"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        uri: "http://django-internal-801e0ca2f694d1c3.elb.us-east-2.amazonaws.com:8000/integrador/update-request"
+        #URL do Load Balancer na POC
+        # "django-internal-9be78297b30d8cb2.elb.us-east-1.amazonaws.com"
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        connectionType: "VPC_LINK"
+        connectionId: "62binq"
+        httpMethod: "PUT"
+        type: "http_proxy"
+  /done:
+    put:
+      responses:
+        200:
+          description: "200 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Empty"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        uri: "http://django-internal-801e0ca2f694d1c3.elb.us-east-2.amazonaws.com:8000/done"
+        #URL do Load Balancer na POC
+        # "django-internal-9be78297b30d8cb2.elb.us-east-1.amazonaws.com"
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        connectionType: "VPC_LINK"
+        connectionId: "62binq"
+        httpMethod: "PUT"
+        type: "http_proxy"
+  /integrador/create-dispatch/{next_process}:
+    post:
+      parameters:
+      - name: "next_process"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        200:
+          description: "200 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Empty"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        uri: "http://django-internal-801e0ca2f694d1c3.elb.us-east-2.amazonaws.com:8000/integrador/create-dispatch/{next_process}"
+        #URL do Load Balancer na POC
+        # "django-internal-9be78297b30d8cb2.elb.us-east-1.amazonaws.com"
+        responses:
+          default:
+            statusCode: "200"
+        requestParameters:
+          integration.request.path.next_process: "method.request.path.next_process"
+        passthroughBehavior: "when_no_match"
+        connectionType: "VPC_LINK"
+        connectionId: "62binq"
+        httpMethod: "POST"
+        type: "http_proxy"
+  /functional:
+    post:
+      responses:
+        200:
+          description: "200 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Empty"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        uri: "http://django-internal-801e0ca2f694d1c3.elb.us-east-2.amazonaws.com:8000/functional"
+        #URL do Load Balancer na POC
+        # "django-internal-9be78297b30d8cb2.elb.us-east-1.amazonaws.com"
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        connectionType: "VPC_LINK"
+        connectionId: "62binq"
+        httpMethod: "POST"
+        type: "http_proxy"
+  /work:
+    post:
+      responses:
+        200:
+          description: "200 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Empty"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        uri: "http://django-internal-801e0ca2f694d1c3.elb.us-east-2.amazonaws.com:8000/work"
+        #URL do Load Balancer na POC
+        # "django-internal-9be78297b30d8cb2.elb.us-east-1.amazonaws.com"
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        connectionType: "VPC_LINK"
+        connectionId: "62binq"
+        httpMethod: "POST"
+        type: "http_proxy"
+components:
+  schemas:
+    Empty:
+      title: "Empty Schema"
+      type: "object"
+  securitySchemes:
+    sigv4:
+      type: "apiKey"
+      name: "Authorization"
+      in: "header"
+      x-amazon-apigateway-authtype: "awsSigv4"

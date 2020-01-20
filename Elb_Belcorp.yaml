@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Arquitectura Datalake v2 - EC2's"
+Metadata:
+    Generator: ""
+Description: ""
+Resources:
+    DjangoLoadBalancer:
+        Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
+        Properties:
+            Name: "ALB-DLK-QAS"
+            Scheme: "internal"
+            Subnets:
+              - subnet-a69ac8cc
+            Tags:
+              - 
+                Key: "Grupo"
+                Value: "BIGDATA"
+              - 
+                Key: "Direccion"
+                Value: "BIGDATA"
+              - 
+                Key: "Entorno"
+                Value: "QAS"
+            Type: "network"
+    LoadBalancerTargetGroup:
+        Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
+        Properties:
+            HealthCheckIntervalSeconds: 30
+            HealthCheckPath: "/"
+            HealthCheckProtocol: "HTTP"
+            HealthyThresholdCount: 3
+            Matcher: 
+                HttpCode: "200-399"
+            Name: "dlk-django-targetgroup-qas"
+            Port: 8000
+            Protocol: "TCP"
+            TargetType: "instance"
+            UnhealthyThresholdCount: 3
+            VpcId: "vpc-ee8d3285"
+            Tags: 
+              - 
+                Key: "Grupo"
+                Value: "BIGDATA"
+              - 
+                Key: "Direccion"
+                Value: "BIGDATA"
+              - 
+                Key: "Entorno"
+                Value: "QAS"  
+    LoadBalancerListener:
+        Type: 'AWS::ElasticLoadBalancingV2::Listener'
+        Properties:
+            DefaultActions:
+            - Type: forward
+              TargetGroupArn: !Ref 'LoadBalancerTargetGroup'
+            LoadBalancerArn: !Ref 'DjangoLoadBalancer'
+            Port: 8000
+            Protocol: "TCP"
